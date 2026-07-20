@@ -61,7 +61,7 @@ static void MX_TIM17_Init(void);
 /* USER CODE BEGIN PFP */
 static void ConfiguraSensore(void);
 static void AvviaMisurazioneSensore(void);
-static void LeggiSensore(void);
+static void LeggiSensore(float *temperatura, float *umidita);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -113,16 +113,30 @@ int main(void)
 
   HAL_TIM_PWM_Start(&htim17, TIM_CHANNEL_1);
   #define HDC1080_ADDR (0x40 << 1) // indirizzo = 0100 0000, shiftato per HAL
+  float temperatura, umidita;
+  uint8_t ventola_attiva = 0;
+  uint32_t timestamp_ventola = 0;
   ConfiguraSensore();
 
     while (1)
     {
       AvviaMisurazioneSensore();
 
-      LeggiSensore();
+      LeggiSensore(&temperatura, &umidita);
 
-      HAL_Delay(1500);
+      if(temperatura > 34.0 && ventola_attiva == 0){
+    	  __HAL_TIM_SET_COMPARE(&htim17, TIM_CHANNEL_1, 100);
+    	  timestamp_ventola = HAL_GetTick();
+    	  ventola_attiva = 1;
+      }
+      else{
+          if(ventola_attiva == 1 && (HAL_GetTick() - timestamp_ventola >= 10000) ){
+        	  __HAL_TIM_SET_COMPARE(&htim17, TIM_CHANNEL_1, 0);
+        	  ventola_attiva = 0;
+          }
+      }
 
+      HAL_Delay(500);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -250,7 +264,7 @@ static void MX_TIM17_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 80;
+  sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
@@ -377,7 +391,7 @@ static void AvviaMisurazioneSensore(void){
 	HAL_Delay(100);
 }
 
-static void LeggiSensore(void){
+static void LeggiSensore(float *temperatura, float *umidita){
 	uint8_t rx_data[4];
 	char uart_buffer[100];
 	int len;
@@ -390,10 +404,10 @@ static void LeggiSensore(void){
 	    uint16_t raw_umid = (rx_data[2] << 8) | rx_data[3];
 
 	    // calcoliamo i valori applicando le formule del datasheet
-	    float temperatura = ((float)raw_temp / 65536) * 165 - 40;
-	    float umidita = ((float)raw_umid / 65536.0) * 100;
+	    *temperatura = ((float)raw_temp / 65536.0f) * 165.0f - 40.0f;
+	    *umidita = ((float)raw_umid / 65536.0f) * 100.0f;
 
-	    len = sprintf(uart_buffer, "Temperatura: %.2f C  Umidita': %.2f %% \r\n", temperatura, umidita);
+	    len = sprintf(uart_buffer, "Temperatura: %.2f C  Umidita': %.2f %% \r\n", *temperatura, *umidita);
 	    HAL_UART_Transmit(&huart1, (uint8_t*)uart_buffer, len, 100);
 	 }
 	 else
