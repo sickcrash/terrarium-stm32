@@ -43,6 +43,10 @@
 
 I2C_HandleTypeDef hi2c1;
 
+PKA_HandleTypeDef hpka;
+
+RNG_HandleTypeDef hrng;
+
 TIM_HandleTypeDef htim17;
 
 UART_HandleTypeDef huart1;
@@ -58,6 +62,10 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM17_Init(void);
+static void MX_RNG_Init(void);
+static void MX_PKA_Init(void);
+static void MX_RADIO_Init(void);
+static void MX_RADIO_TIMER_Init(void);
 /* USER CODE BEGIN PFP */
 static void ConfiguraSensore(void);
 static void AvviaMisurazioneSensore(void);
@@ -104,9 +112,16 @@ int main(void)
   MX_I2C1_Init();
   MX_USART1_UART_Init();
   MX_TIM17_Init();
+  MX_RNG_Init();
+  MX_PKA_Init();
+  MX_RADIO_Init();
+  MX_RADIO_TIMER_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
+
+  /* Init code for STM32_BLE */
+  MX_APPE_Init(NULL);
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -138,6 +153,7 @@ int main(void)
 
       HAL_Delay(500);
     /* USER CODE END WHILE */
+    MX_APPE_Process();
 
     /* USER CODE BEGIN 3 */
     }
@@ -150,14 +166,26 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE|RCC_OSCILLATORTYPE_LSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
   /** Configure the SYSCLKSource and SYSCLKDivider
   */
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.SYSCLKDivider = RCC_RC64MPLL_DIV1;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_RC64MPLL;
+  RCC_ClkInitStruct.SYSCLKDivider = RCC_RC64MPLL_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_WAIT_STATES_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_WAIT_STATES_0) != HAL_OK)
   {
     Error_Handler();
   }
@@ -231,6 +259,132 @@ static void MX_I2C1_Init(void)
 }
 
 /**
+  * @brief PKA Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_PKA_Init(void)
+{
+
+  /* USER CODE BEGIN PKA_Init 0 */
+
+  /* USER CODE END PKA_Init 0 */
+
+  /* USER CODE BEGIN PKA_Init 1 */
+
+  /* USER CODE END PKA_Init 1 */
+  hpka.Instance = PKA;
+  if (HAL_PKA_Init(&hpka) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN PKA_Init 2 */
+
+  /* USER CODE END PKA_Init 2 */
+
+}
+
+/**
+  * @brief RADIO Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_RADIO_Init(void)
+{
+
+  /* USER CODE BEGIN RADIO_Init 0 */
+
+  /* USER CODE END RADIO_Init 0 */
+
+  RADIO_HandleTypeDef hradio = {0};
+
+  /* USER CODE BEGIN RADIO_Init 1 */
+
+  /* USER CODE END RADIO_Init 1 */
+
+  if (__HAL_RCC_RADIO_IS_CLK_DISABLED())
+  {
+    /* Radio Peripheral reset */
+    __HAL_RCC_RADIO_FORCE_RESET();
+    __HAL_RCC_RADIO_RELEASE_RESET();
+
+    /* Enable Radio peripheral clock */
+    __HAL_RCC_RADIO_CLK_ENABLE();
+  }
+  hradio.Instance = RADIO;
+  HAL_RADIO_Init(&hradio);
+  /* USER CODE BEGIN RADIO_Init 2 */
+
+  /* USER CODE END RADIO_Init 2 */
+
+}
+
+/**
+  * @brief RADIO_TIMER Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_RADIO_TIMER_Init(void)
+{
+
+  /* USER CODE BEGIN RADIO_TIMER_Init 0 */
+
+  /* USER CODE END RADIO_TIMER_Init 0 */
+
+  RADIO_TIMER_InitTypeDef RADIO_TIMER_InitStruct = {0};
+
+  /* USER CODE BEGIN RADIO_TIMER_Init 1 */
+
+  /* USER CODE END RADIO_TIMER_Init 1 */
+
+  if (__HAL_RCC_RADIO_IS_CLK_DISABLED())
+  {
+    /* Radio Peripheral reset */
+    __HAL_RCC_RADIO_FORCE_RESET();
+    __HAL_RCC_RADIO_RELEASE_RESET();
+
+    /* Enable Radio peripheral clock */
+    __HAL_RCC_RADIO_CLK_ENABLE();
+  }
+  /* Wait to be sure that the Radio Timer is active */
+  while(LL_RADIO_TIMER_GetAbsoluteTime(WAKEUP) < 0x10);
+  RADIO_TIMER_InitStruct.XTAL_StartupTime = 320;
+  RADIO_TIMER_InitStruct.enableInitialCalibration = FALSE;
+  RADIO_TIMER_InitStruct.periodicCalibrationInterval = 0;
+  HAL_RADIO_TIMER_Init(&RADIO_TIMER_InitStruct);
+  /* USER CODE BEGIN RADIO_TIMER_Init 2 */
+
+  /* USER CODE END RADIO_TIMER_Init 2 */
+
+}
+
+/**
+  * @brief RNG Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_RNG_Init(void)
+{
+
+  /* USER CODE BEGIN RNG_Init 0 */
+
+  /* USER CODE END RNG_Init 0 */
+
+  /* USER CODE BEGIN RNG_Init 1 */
+
+  /* USER CODE END RNG_Init 1 */
+  hrng.Instance = RNG;
+  if (HAL_RNG_Init(&hrng) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN RNG_Init 2 */
+
+  /* USER CODE END RNG_Init 2 */
+
+}
+
+/**
   * @brief TIM17 Initialization Function
   * @param None
   * @retval None
@@ -249,9 +403,9 @@ static void MX_TIM17_Init(void)
 
   /* USER CODE END TIM17_Init 1 */
   htim17.Instance = TIM17;
-  htim17.Init.Prescaler = 100;
+  htim17.Init.Prescaler = 0;
   htim17.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim17.Init.Period = 100;
+  htim17.Init.Period = 65535;
   htim17.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim17.Init.RepetitionCounter = 0;
   htim17.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
@@ -367,6 +521,9 @@ static void MX_GPIO_Init(void)
 
   /**/
   HAL_PWREx_EnableGPIOPullUp(PWR_GPIO_A, PWR_GPIO_BIT_2);
+
+  /*RT DEBUG GPIO_Init */
+  RT_DEBUG_GPIO_Init();
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 

@@ -148,6 +148,180 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
 }
 
 /**
+  * @brief PKA MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param hpka: PKA handle pointer
+  * @retval None
+  */
+void HAL_PKA_MspInit(PKA_HandleTypeDef* hpka)
+{
+  if(hpka->Instance==PKA)
+  {
+    /* USER CODE BEGIN PKA_MspInit 0 */
+
+    /* USER CODE END PKA_MspInit 0 */
+    /* Peripheral clock enable */
+    __HAL_RCC_PKA_CLK_ENABLE();
+    /* USER CODE BEGIN PKA_MspInit 1 */
+
+    /* USER CODE END PKA_MspInit 1 */
+
+  }
+
+}
+
+/**
+  * @brief PKA MSP De-Initialization
+  * This function freeze the hardware resources used in this example
+  * @param hpka: PKA handle pointer
+  * @retval None
+  */
+void HAL_PKA_MspDeInit(PKA_HandleTypeDef* hpka)
+{
+  if(hpka->Instance==PKA)
+  {
+    /* USER CODE BEGIN PKA_MspDeInit 0 */
+
+    /* USER CODE END PKA_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_PKA_CLK_DISABLE();
+    /* USER CODE BEGIN PKA_MspDeInit 1 */
+
+    /* USER CODE END PKA_MspDeInit 1 */
+  }
+
+}
+
+/**
+  * @brief RADIO MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param hradio: RADIO handle pointer
+  * @retval None
+  */
+void HAL_RADIO_MspInit(RADIO_HandleTypeDef* hradio)
+{
+  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
+  if(hradio->Instance==RADIO)
+  {
+    /* USER CODE BEGIN RADIO_MspInit 0 */
+
+    /* USER CODE END RADIO_MspInit 0 */
+
+  /** Initializes the peripherals clock
+  */
+    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RF;
+    PeriphClkInitStruct.RFClockSelection = RCC_RF_CLK_16M;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    /* Peripheral clock enable */
+    if (__HAL_RCC_RADIO_IS_CLK_DISABLED())
+    {
+      /* Radio reset */
+      __HAL_RCC_RADIO_FORCE_RESET();
+      __HAL_RCC_RADIO_RELEASE_RESET();
+
+      /* Enable Radio peripheral clock */
+      __HAL_RCC_RADIO_CLK_ENABLE();
+    }
+
+    /**RADIO GPIO Configuration
+    RF1     ------> RADIO_RF1
+    */
+    RT_DEBUG_GPIO_Init();
+
+    /* RADIO interrupt Init */
+    HAL_NVIC_SetPriority(RADIO_TXRX_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(RADIO_TXRX_IRQn);
+    HAL_NVIC_SetPriority(RADIO_TXRX_SEQ_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(RADIO_TXRX_SEQ_IRQn);
+    HAL_NVIC_SetPriority(RADIO_RRM_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(RADIO_RRM_IRQn);
+    /* USER CODE BEGIN RADIO_MspInit 1 */
+
+    /* USER CODE END RADIO_MspInit 1 */
+
+  }
+
+}
+
+/**
+  * @brief RADIO MSP De-Initialization
+  * This function freeze the hardware resources used in this example
+  * @param hradio: RADIO handle pointer
+  * @retval None
+  */
+void HAL_RADIO_MspDeInit(RADIO_HandleTypeDef* hradio)
+{
+  if(hradio->Instance==RADIO)
+  {
+    /* USER CODE BEGIN RADIO_MspDeInit 0 */
+
+    /* USER CODE END RADIO_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_RADIO_CLK_DISABLE();
+    __HAL_RCC_RADIO_FORCE_RESET();
+    __HAL_RCC_RADIO_RELEASE_RESET();
+
+    /* RADIO interrupt DeInit */
+    HAL_NVIC_DisableIRQ(RADIO_TXRX_IRQn);
+    HAL_NVIC_DisableIRQ(RADIO_TXRX_SEQ_IRQn);
+    HAL_NVIC_DisableIRQ(RADIO_RRM_IRQn);
+    /* USER CODE BEGIN RADIO_MspDeInit 1 */
+
+    /* USER CODE END RADIO_MspDeInit 1 */
+  }
+
+}
+
+/**
+  * @brief RNG MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param hrng: RNG handle pointer
+  * @retval None
+  */
+void HAL_RNG_MspInit(RNG_HandleTypeDef* hrng)
+{
+  if(hrng->Instance==RNG)
+  {
+    /* USER CODE BEGIN RNG_MspInit 0 */
+
+    /* USER CODE END RNG_MspInit 0 */
+    /* Peripheral clock enable */
+    __HAL_RCC_RNG_CLK_ENABLE();
+    /* USER CODE BEGIN RNG_MspInit 1 */
+
+    /* USER CODE END RNG_MspInit 1 */
+
+  }
+
+}
+
+/**
+  * @brief RNG MSP De-Initialization
+  * This function freeze the hardware resources used in this example
+  * @param hrng: RNG handle pointer
+  * @retval None
+  */
+void HAL_RNG_MspDeInit(RNG_HandleTypeDef* hrng)
+{
+  if(hrng->Instance==RNG)
+  {
+    /* USER CODE BEGIN RNG_MspDeInit 0 */
+
+    /* USER CODE END RNG_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_RNG_CLK_DISABLE();
+    /* USER CODE BEGIN RNG_MspDeInit 1 */
+
+    /* USER CODE END RNG_MspDeInit 1 */
+  }
+
+}
+
+/**
   * @brief TIM_Base MSP Initialization
   * This function configures the hardware resources used in this example
   * @param htim_base: TIM_Base handle pointer
