@@ -95,7 +95,7 @@ static TERRARIUM_Context_t TERRARIUM_Context;
 #define TERRARIUM_UUID			(0xabcd)
 #define TEMPERATURA_UUID			0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 #define UMIDITA_UUID			0x00,0x02,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
-#define VENTOLA_UUID			0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+#define VENTOLA_UUID			0x00,0x03,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 
 BLE_GATT_SRV_CCCD_DECLARE(temperatura, CFG_BLE_NUM_RADIO_TASKS, BLE_GATT_SRV_CCCD_PERM_DEFAULT,
                           BLE_GATT_SRV_OP_MODIFIED_EVT_ENABLE_FLAG);
@@ -160,7 +160,7 @@ static const ble_gatt_chr_def_t terrarium_chars[] = {
         .val_buffer_p = &umidita_val_buffer_def
     },
 	{
-        .properties = BLE_GATT_SRV_CHAR_PROP_READ | BLE_GATT_SRV_CHAR_PROP_NOTIFY,
+        .properties = BLE_GATT_SRV_CHAR_PROP_READ | BLE_GATT_SRV_CHAR_PROP_WRITE | BLE_GATT_SRV_CHAR_PROP_NOTIFY,
         .permissions = BLE_GATT_SRV_PERM_NONE,
         .min_key_size = 0x10,
         .uuid = BLE_UUID_INIT_128(VENTOLA_UUID),
@@ -195,6 +195,7 @@ static BLEEVT_EvtAckStatus_t TERRARIUM_EventHandler(aci_blecore_event *p_evt)
 {
   BLEEVT_EvtAckStatus_t return_value = BLEEVT_NoAck;
   aci_gatt_srv_attribute_modified_event_rp0 *p_attribute_modified;
+  aci_gatt_srv_write_event_rp0   *p_write;
   aci_gatt_srv_read_event_rp0    *p_read;
   TERRARIUM_NotificationEvt_t notification;
   /* USER CODE BEGIN Service1_EventHandler_1 */
@@ -345,6 +346,17 @@ static BLEEVT_EvtAckStatus_t TERRARIUM_EventHandler(aci_blecore_event *p_evt)
         }
       }  /* if(p_attribute_modified->Attr_Handle == (TERRARIUM_Context.VentolaCharHdle + CHARACTERISTIC_DESCRIPTOR_ATTRIBUTE_OFFSET))*/
 
+      else if(p_attribute_modified->Attr_Handle == (TERRARIUM_Context.VentolaCharHdle + CHARACTERISTIC_VALUE_ATTRIBUTE_OFFSET))
+      {
+        return_value = BLEEVT_Ack;
+
+        notification.EvtOpcode = TERRARIUM_VENTOLA_WRITE_EVT;
+        /* USER CODE BEGIN Service1_Char_3_ACI_GATT_ATTRIBUTE_MODIFIED_VSEVT_CODE */
+
+        /* USER CODE END Service1_Char_3_ACI_GATT_ATTRIBUTE_MODIFIED_VSEVT_CODE */
+        TERRARIUM_Notification(&notification);
+      } /* if(p_attribute_modified->Attr_Handle == (TERRARIUM_Context.VentolaCharHdle + CHARACTERISTIC_VALUE_ATTRIBUTE_OFFSET))*/
+
       /* USER CODE BEGIN EVT_BLUE_GATT_ATTRIBUTE_MODIFIED_END */
 
       /* USER CODE END EVT_BLUE_GATT_ATTRIBUTE_MODIFIED_END */
@@ -400,6 +412,14 @@ static BLEEVT_EvtAckStatus_t TERRARIUM_EventHandler(aci_blecore_event *p_evt)
       /* USER CODE BEGIN EVT_BLUE_SRV_GATT_BEGIN */
 
       /* USER CODE END EVT_BLUE_SRV_GATT_BEGIN */
+      p_write = (aci_gatt_srv_write_event_rp0*)p_evt->data;
+      if(p_write->Attribute_Handle == (TERRARIUM_Context.VentolaCharHdle + CHARACTERISTIC_VALUE_ATTRIBUTE_OFFSET))
+      {
+        return_value = BLEEVT_Ack;
+        /*USER CODE BEGIN Service1_Char_3_ACI_GATT_SRV_WRITE_VSEVT_CODE */
+#warning user shall call aci_gatt_srv_write_resp() function if allowed
+        /*USER CODE END Service1_Char_3_ACI_GATT_SRV_WRITE_VSEVT_CODE*/
+      } /*if(p_write->Attribute_Handle == (TERRARIUM_Context.VentolaCharHdle + CHARACTERISTIC_VALUE_ATTRIBUTE_OFFSET))*/
 
       /* USER CODE BEGIN EVT_BLUE_GATT_SRV_WRITE_END */
 

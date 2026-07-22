@@ -150,6 +150,23 @@ void TERRARIUM_Notification(TERRARIUM_NotificationEvt_t *p_Notification)
       /* USER CODE END Service1Char3_READ_EVT */
       break;
 
+    case TERRARIUM_VENTOLA_WRITE_EVT:
+      /* USER CODE BEGIN Service1Char3_WRITE_EVT */
+      uint8_t comando_ventola = p_Notification->DataTransfered.p_Payload[0];
+      if (comando_ventola == 1)
+      {
+    	 AttivaVentola();
+      }
+      else
+      {
+    	if(comando_ventola == 0)
+    	  {
+    		SpegniVentola();
+    	  }
+      }
+      /* USER CODE END Service1Char3_WRITE_EVT */
+      break;
+
     case TERRARIUM_VENTOLA_NOTIFY_ENABLED_EVT:
       /* USER CODE BEGIN Service1Char3_NOTIFY_ENABLED_EVT */
       TERRARIUM_APP_Context.Ventola_Notification_Status = Ventola_NOTIFICATION_ON;

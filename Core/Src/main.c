@@ -71,11 +71,16 @@ static void MX_RADIO_TIMER_Init(void);
 static void ConfiguraSensore(void);
 static void AvviaMisurazioneSensore(void);
 static void LeggiSensore(float *temperatura, float *umidita);
+// devo rimuovere static per permettere la visibilità agli altri file
+void AttivaVentola(void);
+void SpegniVentola(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+uint32_t timestamp_sensore = 0;
+uint8_t ventola_attiva = 0;
+uint32_t timestamp_ventola = 0;
 /* USER CODE END 0 */
 
 /**
@@ -130,40 +135,39 @@ int main(void)
   HAL_TIM_PWM_Start(&htim17, TIM_CHANNEL_1);
   #define HDC1080_ADDR (0x40 << 1) // indirizzo = 0100 0000, shiftato per HAL
   float temperatura, umidita;
-  uint8_t ventola_attiva = 0;
-  uint32_t timestamp_ventola = 0;
   extern uint8_t global_device_connected;
   ConfiguraSensore();
 
     while (1)
     {
+      // campioniamo temp. e umid. ogni 5 secondi
+      if((HAL_GetTick() - timestamp_sensore >= 5000) ){
       AvviaMisurazioneSensore();
-
       LeggiSensore(&temperatura, &umidita);
-
-      if(temperatura > 34.0 && ventola_attiva == 0){
-    	  __HAL_TIM_SET_COMPARE(&htim17, TIM_CHANNEL_1, 100);
-    	  timestamp_ventola = HAL_GetTick();
-    	  ventola_attiva = 1;
       }
-      else{
-          if(ventola_attiva == 1 && (HAL_GetTick() - timestamp_ventola >= 10000) ){
-        	  __HAL_TIM_SET_COMPARE(&htim17, TIM_CHANNEL_1, 0);
-        	  ventola_attiva = 0;
-          }
+
+      // attiviamo la ventola se superiamo una soglia di temperatura
+      if(temperatura > 33.0 && ventola_attiva == 0){
+    	  AttivaVentola(); // cattura sempre un timestamp all'attivazione
+      }
+      // controlliamo che la ventola non stia accesa più del tempo stabilito
+      if(ventola_attiva == 1 && (HAL_GetTick() - timestamp_ventola >= 10000) ){
+          SpegniVentola();
       }
 
       Notifica_Temperatura_BLE(temperatura);
 	  Notifica_Umidita_BLE(umidita);
 	  Notifica_Ventola_BLE(ventola_attiva);
 
+	  // lampeggia led blu finchè non mi connetto con bluetooth
       if(global_device_connected == 0){
     	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_1);
       }
 
-      HAL_Delay(500);
-    /* USER CODE END WHILE */
-    MX_APPE_Process();
+      HAL_Delay(100);
+
+      /* USER CODE END WHILE */
+      MX_APPE_Process();
 
     /* USER CODE BEGIN 3 */
     }
@@ -413,9 +417,9 @@ static void MX_TIM17_Init(void)
 
   /* USER CODE END TIM17_Init 1 */
   htim17.Instance = TIM17;
-  htim17.Init.Prescaler = 0;
+  htim17.Init.Prescaler = 13000;
   htim17.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim17.Init.Period = 65535;
+  htim17.Init.Period = 100;
   htim17.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim17.Init.RepetitionCounter = 0;
   htim17.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
@@ -589,15 +593,30 @@ static void LeggiSensore(float *temperatura, float *umidita){
 	    // calcoliamo i valori applicando le formule del datasheet
 	    *temperatura = ((float)raw_temp / 65536.0f) * 165.0f - 40.0f;
 	    *umidita = ((float)raw_umid / 65536.0f) * 100.0f;
-
 	    len = sprintf(uart_buffer, "Temperatura: %.2f C  Umidita': %.2f %% \r\n", *temperatura, *umidita);
 	    HAL_UART_Transmit(&huart1, (uint8_t*)uart_buffer, len, 100);
+	    timestamp_sensore = HAL_GetTick();
 	 }
 	 else
 	 {
 	    len = sprintf(uart_buffer, "Errore di lettura dal sensore.\r\n");
 	    HAL_UART_Transmit(&huart1, (uint8_t*)uart_buffer, len, 100);
 	 }
+}
+
+void AttivaVentola(void){
+	__HAL_TIM_SET_COMPARE(&htim17, TIM_CHANNEL_1, 100); // attiva ventola con pulse = 100
+	timestamp_ventola = HAL_GetTick();
+	ventola_attiva = 1;
+	char msg[] = "Ventola accesa\r\n";
+	HAL_UART_Transmit(&huart1, (uint8_t*)msg, sizeof(msg) - 1, 100);
+}
+
+void SpegniVentola(void){
+	__HAL_TIM_SET_COMPARE(&htim17, TIM_CHANNEL_1, 0); // spegni ventola con pulse = 0
+	ventola_attiva = 0;
+	char msg[] = "Ventola spenta\r\n";
+	HAL_UART_Transmit(&huart1, (uint8_t*)msg, sizeof(msg) - 1, 100);
 }
 
 /* USER CODE END 4 */
