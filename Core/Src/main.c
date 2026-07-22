@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "terrarium_app.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -131,6 +132,7 @@ int main(void)
   float temperatura, umidita;
   uint8_t ventola_attiva = 0;
   uint32_t timestamp_ventola = 0;
+  extern uint8_t global_device_connected;
   ConfiguraSensore();
 
     while (1)
@@ -149,6 +151,14 @@ int main(void)
         	  __HAL_TIM_SET_COMPARE(&htim17, TIM_CHANNEL_1, 0);
         	  ventola_attiva = 0;
           }
+      }
+
+      Notifica_Temperatura_BLE(temperatura);
+	  Notifica_Umidita_BLE(umidita);
+	  Notifica_Ventola_BLE(ventola_attiva);
+
+      if(global_device_connected == 0){
+    	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_1);
       }
 
       HAL_Delay(500);
@@ -511,6 +521,16 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : PB1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
   /*Configure GPIO pin : PA2 */
   GPIO_InitStruct.Pin = GPIO_PIN_2;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -520,13 +540,19 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /**/
+  HAL_PWREx_DisableGPIOPullUp(PWR_GPIO_B, PWR_GPIO_BIT_1);
+
+  /**/
+  HAL_PWREx_DisableGPIOPullDown(PWR_GPIO_B, PWR_GPIO_BIT_1);
+
+  /**/
   HAL_PWREx_EnableGPIOPullUp(PWR_GPIO_A, PWR_GPIO_BIT_2);
 
   /*RT DEBUG GPIO_Init */
   RT_DEBUG_GPIO_Init();
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
-
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
   /* USER CODE END MX_GPIO_Init_2 */
 }
 

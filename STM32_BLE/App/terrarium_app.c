@@ -116,13 +116,13 @@ void TERRARIUM_Notification(TERRARIUM_NotificationEvt_t *p_Notification)
 
     case TERRARIUM_TEMPERATURA_NOTIFY_ENABLED_EVT:
       /* USER CODE BEGIN Service1Char1_NOTIFY_ENABLED_EVT */
-
+      TERRARIUM_APP_Context.Temperatura_Notification_Status = Temperatura_NOTIFICATION_ON;
       /* USER CODE END Service1Char1_NOTIFY_ENABLED_EVT */
       break;
 
     case TERRARIUM_TEMPERATURA_NOTIFY_DISABLED_EVT:
       /* USER CODE BEGIN Service1Char1_NOTIFY_DISABLED_EVT */
-
+      TERRARIUM_APP_Context.Temperatura_Notification_Status = Temperatura_NOTIFICATION_ON;
       /* USER CODE END Service1Char1_NOTIFY_DISABLED_EVT */
       break;
 
@@ -134,13 +134,13 @@ void TERRARIUM_Notification(TERRARIUM_NotificationEvt_t *p_Notification)
 
     case TERRARIUM_UMIDITA_NOTIFY_ENABLED_EVT:
       /* USER CODE BEGIN Service1Char2_NOTIFY_ENABLED_EVT */
-
+      TERRARIUM_APP_Context.Umidita_Notification_Status = Umidita_NOTIFICATION_ON;
       /* USER CODE END Service1Char2_NOTIFY_ENABLED_EVT */
       break;
 
     case TERRARIUM_UMIDITA_NOTIFY_DISABLED_EVT:
       /* USER CODE BEGIN Service1Char2_NOTIFY_DISABLED_EVT */
-
+      TERRARIUM_APP_Context.Umidita_Notification_Status = Umidita_NOTIFICATION_OFF;
       /* USER CODE END Service1Char2_NOTIFY_DISABLED_EVT */
       break;
 
@@ -152,13 +152,13 @@ void TERRARIUM_Notification(TERRARIUM_NotificationEvt_t *p_Notification)
 
     case TERRARIUM_VENTOLA_NOTIFY_ENABLED_EVT:
       /* USER CODE BEGIN Service1Char3_NOTIFY_ENABLED_EVT */
-
+      TERRARIUM_APP_Context.Ventola_Notification_Status = Ventola_NOTIFICATION_ON;
       /* USER CODE END Service1Char3_NOTIFY_ENABLED_EVT */
       break;
 
     case TERRARIUM_VENTOLA_NOTIFY_DISABLED_EVT:
       /* USER CODE BEGIN Service1Char3_NOTIFY_DISABLED_EVT */
-
+      TERRARIUM_APP_Context.Ventola_Notification_Status = Ventola_NOTIFICATION_OFF;
       /* USER CODE END Service1Char3_NOTIFY_DISABLED_EVT */
       break;
 
@@ -225,6 +225,49 @@ void TERRARIUM_APP_Init(void)
 
 /* USER CODE BEGIN FD */
 
+// funzioni custom che aggiornano i valori e li mandano come notifica
+
+void Notifica_Temperatura_BLE(float temp_gradi)
+{
+  if (TERRARIUM_APP_Context.Temperatura_Notification_Status == Temperatura_NOTIFICATION_ON &&
+      TERRARIUM_APP_Context.ConnectionHandle != 0xFFFF) // 0xFFFF valore default stato disconnesso
+  {
+    uint16_t temp_raw = (uint16_t)(temp_gradi * 10); // possiamo solo mandare array di byte
+    TERRARIUM_Data_t data; // definita da cubeMX nell'header
+    data.p_Payload = (uint8_t*)&temp_raw;
+    data.Length = sizeof(temp_raw);
+
+    TERRARIUM_NotifyValue(TERRARIUM_TEMPERATURA, &data, TERRARIUM_APP_Context.ConnectionHandle);
+  }
+}
+
+void Notifica_Umidita_BLE(float umidita_percent)
+{
+  if (TERRARIUM_APP_Context.Umidita_Notification_Status == Umidita_NOTIFICATION_ON &&
+      TERRARIUM_APP_Context.ConnectionHandle != 0xFFFF)
+  {
+    uint16_t umidita_raw = (uint16_t)(umidita_percent * 10);
+    TERRARIUM_Data_t data;
+    data.p_Payload = (uint8_t*)&umidita_raw;
+    data.Length = sizeof(umidita_raw);
+
+    TERRARIUM_NotifyValue(TERRARIUM_UMIDITA, &data, TERRARIUM_APP_Context.ConnectionHandle);
+  }
+}
+
+void Notifica_Ventola_BLE(uint8_t stato_ventola)
+{
+  if (TERRARIUM_APP_Context.Ventola_Notification_Status == Ventola_NOTIFICATION_ON &&
+      TERRARIUM_APP_Context.ConnectionHandle != 0xFFFF)
+  {
+    TERRARIUM_Data_t data;
+    data.p_Payload = &stato_ventola;
+    data.Length = sizeof(stato_ventola);
+
+    TERRARIUM_NotifyValue(TERRARIUM_VENTOLA, &data, TERRARIUM_APP_Context.ConnectionHandle);
+  }
+}
+
 /* USER CODE END FD */
 
 /*************************************************************
@@ -241,7 +284,7 @@ __USED void TERRARIUM_Temperatura_SendNotification(void) /* Property Notificatio
   terrarium_notification_data.Length = 0;
 
   /* USER CODE BEGIN Service1Char1_NS_1*/
-
+  notification_on_off = TERRARIUM_APP_Context.Temperatura_Notification_Status;
   /* USER CODE END Service1Char1_NS_1*/
 
   if (notification_on_off != Temperatura_NOTIFICATION_OFF && TERRARIUM_APP_Context.ConnectionHandle != 0xFFFF)
@@ -265,7 +308,7 @@ __USED void TERRARIUM_Umidita_SendNotification(void) /* Property Notification */
   terrarium_notification_data.Length = 0;
 
   /* USER CODE BEGIN Service1Char2_NS_1*/
-
+  notification_on_off = TERRARIUM_APP_Context.Umidita_Notification_Status;
   /* USER CODE END Service1Char2_NS_1*/
 
   if (notification_on_off != Umidita_NOTIFICATION_OFF && TERRARIUM_APP_Context.ConnectionHandle != 0xFFFF)
@@ -289,7 +332,7 @@ __USED void TERRARIUM_Ventola_SendNotification(void) /* Property Notification */
   terrarium_notification_data.Length = 0;
 
   /* USER CODE BEGIN Service1Char3_NS_1*/
-
+  notification_on_off = TERRARIUM_APP_Context.Ventola_Notification_Status;
   /* USER CODE END Service1Char3_NS_1*/
 
   if (notification_on_off != Ventola_NOTIFICATION_OFF && TERRARIUM_APP_Context.ConnectionHandle != 0xFFFF)

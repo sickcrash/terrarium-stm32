@@ -32,13 +32,19 @@
 // to go in deep sleep.
 // All the Cortex M0+ registers are saved and restored plus after wakeup
 // -----------------------------------------------------------------------------
+                .syntax unified
+                .cpu cortex-m0plus
+                .thumb
+
                 __CODE__
                 __THUMB__
                 __EXPORT__ CPUcontextSave
                 __EXPORT__ CPUcontextRestore
                 __IMPORT__ RAM_VR
 
-.thumb_func
+                .global CPUcontextSave
+                .type CPUcontextSave, %function
+                .thumb_func
 EXPORT_FUNC(CPUcontextSave)
                 MRS    R2, CONTROL             /* load the CONTROL register into R2 */
                 MRS    R1, PSP                 /* load the process stack pointer into R1 */
@@ -69,7 +75,9 @@ EXPORT_FUNC(CPUcontextSave)
 
                 ENDFUNC
 
-.thumb_func
+                .global CPUcontextRestore
+                .type CPUcontextRestore, %function
+                .thumb_func
 EXPORT_FUNC(CPUcontextRestore)
                 /* Even if we fall through the WFI instruction, we will immediately
                  * execute a context restore and end up where we left off with no

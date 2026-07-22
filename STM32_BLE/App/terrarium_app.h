@@ -59,7 +59,9 @@ typedef struct
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-
+void Notifica_Temperatura_BLE(float temp_gradi);
+void Notifica_Umidita_BLE(float umidita_percent);
+void Notifica_Ventola_BLE(uint8_t stato_ventola);
 /* USER CODE END EC */
 
 /* External variables --------------------------------------------------------*/

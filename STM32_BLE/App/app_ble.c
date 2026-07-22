@@ -161,10 +161,11 @@ static const char a_GapDeviceName[] = {  'S', 'T', 'M', '3', '2', 'W', 'B', '0' 
 uint8_t a_AdvData[] =
 {
   2, AD_TYPE_FLAGS, FLAG_BIT_LE_GENERAL_DISCOVERABLE_MODE|FLAG_BIT_BR_EDR_NOT_SUPPORTED,
+  18, AD_TYPE_COMPLETE_LOCAL_NAME, 'A', 'l', 'e', 's', 's', 'i', 'o', '-', 'T', 'e', 'r', 'r', 'a', 'r', 'i', 'u', 'm',  /* Complete name */
 };
 
 /* USER CODE BEGIN PV */
-
+uint8_t global_device_connected = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -599,7 +600,9 @@ void BLEEVT_App_Notification(const hci_pckt *hci_pckt)
       TERRARIUMHandleNotification.ConnectionHandle = p_disconnection_complete_event->Connection_Handle;
       TERRARIUM_APP_EvtRx(&TERRARIUMHandleNotification);
       /* USER CODE BEGIN EVT_DISCONN_COMPLETE */
-
+      global_device_connected = 0;
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+      APP_BLE_Procedure_Gap_Peripheral(PROC_GAP_PERIPH_ADVERTISE_START_FAST);
       /* USER CODE END EVT_DISCONN_COMPLETE */
     }
     break;
@@ -848,7 +851,8 @@ static void connection_complete_event(uint8_t Status,
     return;
   }
   /* USER CODE BEGIN HCI_EVT_LE_CONN_COMPLETE_1 */
-
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
+  global_device_connected = 1;
   /* USER CODE END HCI_EVT_LE_CONN_COMPLETE_1 */
   APP_DBG_MSG(">>== hci_le_connection_complete_event - Connection handle: 0x%04X\n", Connection_Handle);
   APP_DBG_MSG("     - Connection established with @:%02x:%02x:%02x:%02x:%02x:%02x\n",
