@@ -59,7 +59,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-void AttivaVentola(void);
+void AttivaVentola(uint8_t velocita);
 void SpegniVentola(void);
 /* USER CODE END EFP */
 

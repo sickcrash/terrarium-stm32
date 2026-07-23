@@ -152,10 +152,12 @@ void TERRARIUM_Notification(TERRARIUM_NotificationEvt_t *p_Notification)
 
     case TERRARIUM_VENTOLA_WRITE_EVT:
       /* USER CODE BEGIN Service1Char3_WRITE_EVT */
+
+      // usiamo comando_ventola per prendere un numero da 0 a 100 per modulare PWM
       uint8_t comando_ventola = p_Notification->DataTransfered.p_Payload[0];
-      if (comando_ventola == 1)
+      if (comando_ventola > 0)
       {
-    	 AttivaVentola();
+    	 AttivaVentola(comando_ventola);
       }
       else
       {
