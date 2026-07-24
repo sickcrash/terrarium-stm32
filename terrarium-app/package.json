@@ -1,0 +1,17 @@
+{
+  "name": "terrarium-iot-server",
+  "version": "1.0.0",
+  "description": "IoT Backend per il progetto STM32",
+  "main": "server.js",
+  "scripts": {
+    "start": "concurrently -k -p \"[{name}]\" -n \"PYTHON,NODE\" -c \"yellow,cyan\" \".venv/bin/python -u gateway_daemon.py\" \"node server.js\""
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.2",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
+}

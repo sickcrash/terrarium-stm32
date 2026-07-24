@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terrarium App</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🦎 Terrarium Remote</h1>
+        <div id="status" class="status-badge" style="background: #4CAF50">Backend Online</div>
+    </div>
+
+    <div class="card-container">
+        <!-- Letture in Tempo Reale -->
+        <div class="card">
+            <h3>Ultima Lettura</h3>
+            <p>🌡️ Temp: <span id="dashTemp" class="val temp">--</span> °C</p>
+            <p>💧 Umid: <span id="dashHumid" class="val humid">--</span> %</p>
+        </div>
+
+        <!-- Controllo Remoto -->
+        <div class="card">
+            <h3>🌬️ Controllo Ventola</h3>
+            <div id="fanVal" class="val fan">-- %</div>
+            
+            <input type="range" id="fanSlider" min="0" max="100" value="0" 
+                   onchange="inviaComandoVentola(this.value)" 
+                   oninput="document.getElementById('fanVal').innerText = this.value + ' %'">
+            
+            <div class="btn-group">
+                <button class="btn-off" onclick="impostaPreset(0)">OFF ⚪</button>
+                <button onclick="impostaPreset(50)">50% 🌀</button>
+                <button class="btn-on" onclick="impostaPreset(100)">100% ⚡</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grafico -->
+    <div class="card" style="max-width: 800px; margin: 30px auto;">
+        <h3>📊 Storico Dati Ambientali</h3>
+        <canvas id="telemetryChart"></canvas>
+    </div>
+
+<script>
+let telemetryChart;
+
+window.onload = () => {
+    const ctx = document.getElementById('telemetryChart').getContext('2d');
+    telemetryChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                { label: 'Temp Media (°C)', borderColor: '#ff4d4d', data: [], tension: 0.3, yAxisID: 'y' },
+                { label: 'Umidità Media (%)', borderColor: '#2196F3', data: [], tension: 0.3, yAxisID: 'y' },
+                { label: 'Picco Ventola (%)', borderColor: '#4CAF50', backgroundColor: 'rgba(76, 175, 80, 0.1)', fill: true, data: [], tension: 0, yAxisID: 'y1' }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: { 
+                y: { type: 'linear', display: true, position: 'left' },
+                y1: { type: 'linear', display: true, position: 'right', min: 0, max: 100, grid: { drawOnChartArea: false } }
+            }
+        }
+    });
+
+    // Avvio routine separate
+    aggiornaStatoIstantaneo();
+    aggiornaGraficoStorico();
+
+    // I numeri in tempo reale si aggiornano ogni 5 secondi
+    setInterval(aggiornaStatoIstantaneo, 5000);
+    
+    // Il grafico si aggiorna ogni 5 minuti (per controllare se c'è un nuovo dato ventennale)
+    setInterval(aggiornaGraficoStorico, 300000); 
+};
+
+// 1. Routine Dati Istantanei (Numeri Dashboard)
+async function aggiornaStatoIstantaneo() {
+    try {
+        const res = await fetch('/api/storico/recente');
+        const ultimo = await res.json();
+        
+        if (ultimo.temperatura !== undefined) {
+            document.getElementById('dashTemp').innerText = ultimo.temperatura;
+            document.getElementById('dashHumid').innerText = ultimo.umidita;
+        }
+    } catch (e) {
+        document.getElementById('status').innerText = "Backend Offline";
+        document.getElementById('status').style.background = "#f44336";
+    }
+}
+
+// 2. Routine Grafico Storico
+async function aggiornaGraficoStorico() {
+    try {
+        const res = await fetch('/api/storico/grafico');
+        const dati = await res.json();
+        
+        if (dati && dati.length > 0) {
+            telemetryChart.data.labels = dati.map(d => {
+                if (!d.timestamp) return '';
+
+                // 1. Trasforma "2026-07-23 13:18:55" in "2026-07-23T13:18:55Z" (UTC)
+                const isoUtcStr = d.timestamp.replace(' ', 'T') + 'Z';
+                
+                // 2. JavaScript legge la 'Z' e converte l'ora nell'ora locale del tuo Mac
+                const date = new Date(isoUtcStr);
+                
+                const ore = String(date.getHours()).padStart(2, '0');
+                const minuti = String(date.getMinutes()).padStart(2, '0');
+                return `${ore}:${minuti}`;
+            });
+
+            telemetryChart.data.datasets[0].data = dati.map(d => d.temperatura);
+            telemetryChart.data.datasets[1].data = dati.map(d => d.umidita);
+            telemetryChart.data.datasets[2].data = dati.map(d => d.ventola);
+            
+            telemetryChart.update();
+        }
+    } catch (e) {
+        console.error("Errore recupero grafico:", e);
+    }
+}
+
+async function inviaComandoVentola(velocita) {
+    const val = parseInt(velocita);
+    document.getElementById('fanVal').innerText = val + " %";
+    try {
+        await fetch('/api/comando-ventola', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pwm: val })
+        });
+    } catch (e) { alert("Errore invio comando"); }
+}
+
+function impostaPreset(valore) {
+    document.getElementById('fanSlider').value = valore;
+    inviaComandoVentola(valore);
+}
+</script>

@@ -1,0 +1,64 @@
+body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #121212;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+}
+.header { margin-bottom: 30px; }
+.card-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+}
+.card {
+    background: #1e1e1e;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    flex: 1 1 250px;
+    max-width: 400px;
+}
+.val { font-size: 2.5em; font-weight: bold; margin: 10px 0; }
+.val.temp { color: #ff4d4d; }
+.val.humid { color: #2196F3; }
+.val.fan { color: #4CAF50; }
+
+button {
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 8px;
+    border: none;
+    background: #2196F3;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+}
+button:hover { opacity: 0.9; transform: scale(1.02); }
+.btn-on { background: #4CAF50; }
+.btn-off { background: #f44336; }
+.btn-group { margin-top: 15px; display: flex; justify-content: center; gap: 10px; }
+.status-badge {
+    display: inline-block;
+    padding: 5px 15px;
+    border-radius: 20px;
+    background: #333;
+    font-size: 14px;
+    margin-top: 10px;
+}
+input[type=range] {
+    width: 100%;
+    margin-top: 15px;
+    accent-color: #2196F3;
+    cursor: pointer;
+}
+canvas {
+    background: #1e1e1e;
+    border-radius: 12px;
+    padding: 10px;
+    margin-top: 20px;
+    max-width: 100%;
+}
