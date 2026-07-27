@@ -81,6 +81,7 @@ void SpegniVentola(void);
 uint32_t timestamp_sensore = 0;
 uint8_t ventola_attiva = 0;
 uint32_t timestamp_ventola = 0;
+uint32_t timeout_ventola = 0;
 /* USER CODE END 0 */
 
 /**
@@ -145,7 +146,7 @@ int main(void)
       AvviaMisurazioneSensore();
       LeggiSensore(&temperatura, &umidita);
       	  // attiviamo la ventola se superiamo una soglia di temperatura
-      	  if(temperatura > 33.0 && ventola_attiva == 0){
+      	  if(temperatura > 30.0 && ventola_attiva == 0){
           	  AttivaVentola(100); // cattura sempre un timestamp all'attivazione
           	  Notifica_Ventola_BLE(ventola_attiva);
           }
@@ -575,7 +576,7 @@ static void ConfiguraSensore(void){
 static void AvviaMisurazioneSensore(void){
 	uint8_t reg_pointer = 0x00;
 	HAL_I2C_Master_Transmit(&hi2c1, HDC1080_ADDR,  &reg_pointer, 1, 100);
-	HAL_Delay(100);
+	HAL_Delay(10);
 }
 
 static void LeggiSensore(float *temperatura, float *umidita){
@@ -605,15 +606,20 @@ static void LeggiSensore(float *temperatura, float *umidita){
 }
 
 void AttivaVentola(uint8_t velocita){
-	if (velocita > 100){
-		velocita = 100;
-	}
-	if(velocita==0){
+	if(velocita<=0){
 		SpegniVentola();
+		return;
 	}
-	else{
+	if(HAL_GetTick() - timeout_ventola <= 10000){
+		char msg[] = "Timeout ventola ancora attivo\r\n";
+		HAL_UART_Transmit(&huart1, (uint8_t*)msg, sizeof(msg) - 1, 100);
+	}
+	else {
+		if (velocita > 100){
+			velocita = 100;
+		}
 		__HAL_TIM_SET_COMPARE(&htim17, TIM_CHANNEL_1, velocita); // attiva ventola con pulse = velocita
-		timestamp_ventola = HAL_GetTick();
+		if(ventola_attiva == 0) timestamp_ventola = HAL_GetTick(); // evitiamo di estendere il timer se era già attivo
 		ventola_attiva = velocita;
 		char msg[] = "Ventola accesa\r\n";
 		HAL_UART_Transmit(&huart1, (uint8_t*)msg, sizeof(msg) - 1, 100);
@@ -621,10 +627,13 @@ void AttivaVentola(uint8_t velocita){
 }
 
 void SpegniVentola(void){
-	__HAL_TIM_SET_COMPARE(&htim17, TIM_CHANNEL_1, 0); // spegni ventola con pulse = 0
-	ventola_attiva = 0;
-	char msg[] = "Ventola spenta\r\n";
-	HAL_UART_Transmit(&huart1, (uint8_t*)msg, sizeof(msg) - 1, 100);
+	if(ventola_attiva > 0){ //  evitiamo di ripetere tutte le azioni e di resettare il timeout
+		__HAL_TIM_SET_COMPARE(&htim17, TIM_CHANNEL_1, 0); // spegni ventola con pulse = 0
+		ventola_attiva = 0;
+		char msg[] = "Ventola spenta\r\n";
+		HAL_UART_Transmit(&huart1, (uint8_t*)msg, sizeof(msg) - 1, 100);
+		timeout_ventola = HAL_GetTick();
+	}
 }
 
 /* USER CODE END 4 */
